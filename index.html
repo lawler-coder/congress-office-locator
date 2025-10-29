@@ -20,17 +20,16 @@
       <form id="search-form" autocomplete="off">
         <label for="member-name">Member of Congress</label>
         <div class="search-input">
-          <input
-            id="member-name"
-            name="member-name"
-            type="text"
-            list="member-options"
-            placeholder="Start typing a name..."
-            required
-          />
-          <button type="submit">Locate</button>
-        </div>
-        <datalist id="member-options"></datalist>
+  <input
+    id="member-name"
+    name="member-name"
+    type="text"
+    placeholder="Type a member’s name (e.g., Hakeem Jeffries)"
+    required
+  />
+  <button type="submit">Locate</button>
+</div>
+
       </form>
 
       <article id="member-details" class="card card-details hidden" aria-live="polite"></article>
@@ -55,8 +54,10 @@
     </p>
   </footer>
 
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+<script src="congress-api.js"></script>
+<script src="app.js"></script>
+
 </body>
 
 </html>
+
