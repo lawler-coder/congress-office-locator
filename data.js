@@ -1,46 +1,30 @@
-// Combined House and Senate Office Buildings (schematic data)
-const BUILDING_PLANS = {
+// Minimal building info: we’ll use Google Maps for the actual shapes.
+// (These addresses are used for the details card; the map uses lat/lng below.)
+const BUILDING_COORDS = {
   'Cannon House Office Building': {
-    key: 'cannon',
     address: 'Cannon House Office Building, Washington, DC 20515',
-    width: 900, height: 300,
-    rect: { x: 0, y: 0, w: 280, h: 220, label: 'Cannon' },
-    marker: { x: 140, y: 110 }
+    // TODO: paste exact lat/lng from Google Maps (see Step 2)
+    lat: null, lng: null
   },
   'Longworth House Office Building': {
-    key: 'longworth',
     address: 'Longworth House Office Building, Washington, DC 20515',
-    width: 900, height: 300,
-    rect: { x: 310, y: 0, w: 280, h: 220, label: 'Longworth' },
-    marker: { x: 450, y: 110 }
+    lat: null, lng: null
   },
   'Rayburn House Office Building': {
-    key: 'rayburn',
     address: 'Rayburn House Office Building, Washington, DC 20515',
-    width: 900, height: 300,
-    rect: { x: 620, y: 0, w: 280, h: 220, label: 'Rayburn' },
-    marker: { x: 760, y: 110 }
+    lat: null, lng: null
   },
   'Hart Senate Office Building': {
-    key: 'hart',
     address: '120 Constitution Ave NE, Washington, DC 20510',
-    width: 900, height: 300,
-    rect: { x: 0, y: 0, w: 280, h: 220, label: 'Hart' },
-    marker: { x: 140, y: 110 }
+    lat: null, lng: null
   },
   'Dirksen Senate Office Building': {
-    key: 'dirksen',
     address: '50 Constitution Ave NE, Washington, DC 20510',
-    width: 900, height: 300,
-    rect: { x: 310, y: 0, w: 280, h: 220, label: 'Dirksen' },
-    marker: { x: 450, y: 110 }
+    lat: null, lng: null
   },
   'Russell Senate Office Building': {
-    key: 'russell',
     address: '2 Constitution Ave NE, Washington, DC 20510',
-    width: 900, height: 300,
-    rect: { x: 620, y: 0, w: 280, h: 220, label: 'Russell' },
-    marker: { x: 760, y: 110 }
+    lat: null, lng: null
   }
 };
 
