@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#eef2f7" stroke="#bcc5d1" stroke-width="4" />
+  <rect x="40" y="40" width="320" height="220" fill="#d9e2f3" stroke="#94a3b8" stroke-width="2" rx="18" />
+  <text x="200" y="150" text-anchor="middle" font-size="28" fill="#1e293b" font-family="Arial, sans-serif">
+    Cannon
+  </text>
+  <text x="200" y="190" text-anchor="middle" font-size="18" fill="#475569" font-family="Arial, sans-serif">
+    House Office Building
+  </text>
+</svg>

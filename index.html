@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Congressional Office Locator</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Congressional Office Locator</h1>
+    <p class="tagline">Search for a Member of Congress to find their office location and see it on the map.</p>
+  </header>
+
+  <main class="content">
+    <section class="search-panel">
+      <form id="search-form" autocomplete="off">
+        <label for="member-name">Member of Congress</label>
+        <div class="search-input">
+          <input
+            id="member-name"
+            name="member-name"
+            type="text"
+            list="member-options"
+            placeholder="Start typing a name..."
+            required
+          />
+          <button type="submit">Locate</button>
+        </div>
+        <datalist id="member-options"></datalist>
+      </form>
+
+      <article id="member-details" class="card card-details hidden" aria-live="polite"></article>
+    </section>
+
+    <section class="map-panel">
+      <div class="card map-card">
+        <header class="map-header">
+          <h2 id="map-title">Select a member to view the map</h2>
+          <p id="map-subtitle">Building floor plans are simplified diagrams to help you orient yourself.</p>
+        </header>
+        <div id="map-container" class="map-container" role="img" aria-labelledby="map-title map-subtitle">
+          <p class="placeholder">Search for a member to display the office location.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>
+      Data sources include House and Senate office directories. Floor plans are schematic and not to scale.
+    </p>
+  </footer>
+
+  <script src="scripts/data.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>
