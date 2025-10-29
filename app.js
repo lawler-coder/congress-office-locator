@@ -1,5 +1,52 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+function normalize(s) {
+  return (s ?? '')
+    .toLowerCase()
+    .normalize('NFD')                    // split accents
+    .replace(/\p{Diacritic}/gu, '')     // remove accents
+    .replace(/[^a-z0-9\s.-]/g, ' ')     // drop punctuation
+    .replace(/\s+/g, ' ')               // collapse spaces
+    .trim();
+}
+
+function lastNameOf(fullName) {
+  const parts = normalize(fullName).split(' ').filter(Boolean);
+  return parts.length ? parts[parts.length - 1] : '';
+}
+
+// Choose the best match from API results given a free-text query.
+// Prefers exact last-name match, then starts-with on last name, then full-name starts-with/includes.
+function pickBestMatch(query, matches) {
+  const q = normalize(query);
+  const qLast = lastNameOf(query);
+  let best = null;
+  let bestScore = -1;
+
+  for (const m of matches) {
+    const name = normalize(m.name);
+    const mLast = lastNameOf(m.name);
+
+    let score = 0;
+
+    // Strong preference: exact last-name match
+    if (qLast && mLast === qLast) score = Math.max(score, 100);
+
+    // Next best: last name starts-with
+    if (qLast && mLast.startsWith(qLast)) score = Math.max(score, 90);
+
+    // Full-name heuristics
+    if (name === q) score = Math.max(score, 95);
+    else if (name.startsWith(q)) score = Math.max(score, 85);
+    else if (name.includes(q)) score = Math.max(score, 70);
+
+    if (score > bestScore) { bestScore = score; best = m; }
+  }
+
+  // Require at least a reasonable score; else just return first result as fallback
+  return bestScore >= 70 ? best : (matches[0] ?? null);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('search-form');
   const input = document.getElementById('member-name');
@@ -24,8 +71,9 @@ form.addEventListener('submit', async (event) => {
       return;
     }
 
-    // For now, take the first match (we can add a chooser later)
-    const member = matches[0];
+// Prefer exact/close last-name matches so "jeffries" finds Hakeem Jeffries
+const member = pickBestMatch(query, matches);
+
 
     renderMemberDetails(details, member);
     renderMap(mapContainer, title, subtitle, member);
@@ -211,3 +259,4 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 
 }
+
