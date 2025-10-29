@@ -123,13 +123,52 @@ function renderMemberDetails(container, member) {
 }
 
 function renderMap(mapContainer, title, subtitle, member) {
-  const building = BUILDING_PLANS[member.building];
-  if (!building) {
-    title.textContent = `${member.office ?? ''} ${member.building ?? ''}`.trim();
-    subtitle.textContent = 'We do not have a floor plan for this building yet.';
+  const plan = BUILDING_PLANS[member.building];
+
+  title.textContent = member.building || 'Washington, DC';
+  subtitle.textContent = plan ? plan.address : 'We do not have a schematic for this building yet.';
+
+  if (!plan) {
     mapContainer.innerHTML = '<p class="placeholder">Map unavailable.</p>';
     return;
   }
+
+  const svg = createSvgCanvas(plan.width, plan.height);
+
+  // Building rectangle
+  const r = document.createElementNS(SVG_NS, 'rect');
+  r.setAttribute('x', plan.rect.x);
+  r.setAttribute('y', plan.rect.y);
+  r.setAttribute('width', plan.rect.w);
+  r.setAttribute('height', plan.rect.h);
+  r.setAttribute('rx', 10);
+  r.setAttribute('ry', 10);
+  r.setAttribute('fill', '#eef3ff');
+  r.setAttribute('stroke', '#c7d6f5');
+  r.setAttribute('stroke-width', 2);
+  svg.append(r);
+
+  // Label
+  const label = document.createElementNS(SVG_NS, 'text');
+  label.textContent = plan.rect.label;
+  label.setAttribute('x', plan.rect.x + plan.rect.w / 2);
+  label.setAttribute('y', plan.rect.y + plan.rect.h + 24);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('class', 'map-label');
+  svg.append(label);
+
+  // Star marker at building center (we can refine to wing later)
+  const marker = createMarker(plan.marker.x, plan.marker.y);
+  svg.append(marker);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'map-canvas';
+  wrapper.append(svg);
+
+  mapContainer.innerHTML = '';
+  mapContainer.append(wrapper);
+}
+
 
   const floorPlan = building.floors[member.floor];
   if (!floorPlan) {
@@ -246,6 +285,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
