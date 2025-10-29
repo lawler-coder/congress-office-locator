@@ -9,34 +9,34 @@ document.addEventListener('DOMContentLoaded', () => {
   const title = document.getElementById('map-title');
   const subtitle = document.getElementById('map-subtitle');
 
-  populateMemberOptions(datalist);
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const query = input.value.trim();
-    if (!query) {
-      return;
-    }
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const query = input.value.trim();
+  if (!query) return;
 
-    const member = findMember(query);
-    if (!member) {
+  try {
+    // Call the Congress.gov API (from congress-api.js)
+    const matches = await searchMembersByName(query);
+
+    if (!matches || matches.length === 0) {
       renderNotFound(details, mapContainer, title, subtitle, query);
       return;
     }
 
+    // For now, take the first match (we can add a chooser later)
+    const member = matches[0];
+
     renderMemberDetails(details, member);
     renderMap(mapContainer, title, subtitle, member);
-  });
+  } catch (err) {
+    console.error(err);
+    renderNotFound(details, mapContainer, title, subtitle, query);
+  }
 });
 
-function populateMemberOptions(datalist) {
-  MEMBERS.forEach((member) => {
-    const option = document.createElement('option');
-    option.value = member.name;
-    option.label = `${member.name} (${member.state})`;
-    datalist.append(option);
-  });
-}
+
+
 
 function findMember(query) {
   const normalized = query.toLowerCase();
@@ -209,4 +209,5 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+
 }
