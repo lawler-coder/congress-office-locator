@@ -1,127 +1,28 @@
+// Minimal schematic: three House office buildings (not to scale)
 const BUILDING_PLANS = {
   'Cannon House Office Building': {
-    address: '27 Independence Ave SE, Washington, DC 20515',
-    floors: {
-      2: {
-        width: 620,
-        height: 360,
-        shapes: [
-          {
-            d: 'M30 30 H590 V160 H30 Z',
-            fill: '#f0f4ff',
-            label: 'South Corridor',
-            labelX: 110,
-            labelY: 95
-          },
-          {
-            d: 'M30 200 H280 V330 H30 Z',
-            fill: '#e9efff',
-            label: 'Center Corridor',
-            labelX: 100,
-            labelY: 280
-          },
-          {
-            d: 'M330 200 H590 V330 H330 Z',
-            fill: '#f0f4ff',
-            label: 'North Corridor',
-            labelX: 460,
-            labelY: 280
-          }
-        ]
-      },
-      4: {
-        width: 620,
-        height: 360,
-        shapes: [
-          {
-            d: 'M30 40 H590 V150 H30 Z',
-            fill: '#f7faff',
-            label: 'South Corridor',
-            labelX: 120,
-            labelY: 100
-          },
-          {
-            d: 'M30 190 H280 V320 H30 Z',
-            fill: '#edf2ff',
-            label: 'Center Corridor',
-            labelX: 100,
-            labelY: 260
-          },
-          {
-            d: 'M330 190 H590 V320 H330 Z',
-            fill: '#f7faff',
-            label: 'North Corridor',
-            labelX: 455,
-            labelY: 260
-          }
-        ]
-      }
-    }
+    key: 'cannon',
+    address: 'Cannon House Office Building, Washington, DC 20515',
+    width: 900, height: 300,
+    rect: { x: 0,   y: 0,   w: 280, h: 220, label: 'Cannon' },
+    marker: { x: 140, y: 110 } // center
   },
   'Longworth House Office Building': {
-    address: '15 Independence Ave SE, Washington, DC 20515',
-    floors: {
-      1: {
-        width: 620,
-        height: 360,
-        shapes: [
-          {
-            d: 'M40 50 H580 V140 H40 Z',
-            fill: '#f5f9ff',
-            label: 'East Wing',
-            labelX: 180,
-            labelY: 105
-          },
-          {
-            d: 'M40 180 H300 V320 H40 Z',
-            fill: '#e8f0ff',
-            label: 'Center Atrium',
-            labelX: 160,
-            labelY: 260
-          },
-          {
-            d: 'M340 180 H580 V320 H340 Z',
-            fill: '#f5f9ff',
-            label: 'West Wing',
-            labelX: 460,
-            labelY: 260
-          }
-        ]
-      }
-    }
+    key: 'longworth',
+    address: 'Longworth House Office Building, Washington, DC 20515',
+    width: 900, height: 300,
+    rect: { x: 310, y: 0,   w: 280, h: 220, label: 'Longworth' },
+    marker: { x: 450, y: 110 }
   },
   'Rayburn House Office Building': {
-    address: '45 Independence Ave SW, Washington, DC 20515',
-    floors: {
-      2: {
-        width: 640,
-        height: 360,
-        shapes: [
-          {
-            d: 'M40 40 H600 V120 H40 Z',
-            fill: '#f0f7ff',
-            label: 'South Hall',
-            labelX: 180,
-            labelY: 90
-          },
-          {
-            d: 'M40 160 H280 V320 H40 Z',
-            fill: '#e5efff',
-            label: 'Center Hall',
-            labelX: 150,
-            labelY: 250
-          },
-          {
-            d: 'M320 160 H600 V320 H320 Z',
-            fill: '#f0f7ff',
-            label: 'North Hall',
-            labelX: 470,
-            labelY: 250
-          }
-        ]
-      }
-    }
-  },
+    key: 'rayburn',
+    address: 'Rayburn House Office Building, Washington, DC 20515',
+    width: 900, height: 300,
+    rect: { x: 620, y: 0,   w: 280, h: 220, label: 'Rayburn' },
+    marker: { x: 760, y: 110 }
+  }
+};
+
   'Hart Senate Office Building': {
     address: '120 Constitution Ave NE, Washington, DC 20510',
     floors: {
@@ -384,4 +285,5 @@ const MEMBERS = [
 
 const MEMBER_INDEX = new Map(
   MEMBERS.map((member) => [member.name.toLowerCase(), member])
+
 );
