@@ -4,7 +4,7 @@ const BUILDING_COORDS = {
   'Cannon House Office Building': {
     address: 'Cannon House Office Building, Washington, DC 20515',
     // TODO: paste exact lat/lng from Google Maps (see Step 2)
-    lat: null, lng: null
+    lat: 38.886811, lng: null
   },
   'Longworth House Office Building': {
     address: 'Longworth House Office Building, Washington, DC 20515',
@@ -12,7 +12,7 @@ const BUILDING_COORDS = {
   },
   'Rayburn House Office Building': {
     address: 'Rayburn House Office Building, Washington, DC 20515',
-    lat: null, lng: null
+    lat: 38.886811, lng: -77.010568
   },
   'Hart Senate Office Building': {
     address: '120 Constitution Ave NE, Washington, DC 20510',
@@ -27,4 +27,5 @@ const BUILDING_COORDS = {
     lat: null, lng: null
   }
 };
+
 
