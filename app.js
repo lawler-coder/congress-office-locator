@@ -1,12 +1,49 @@
+// app.js — clean working version wired to Congress.gov search
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('search-form');
+  const input = document.getElementById('member-name');
+  const details = document.getElementById('member-details');
+  const mapContainer = document.getElementById('map-container');
+  const title = document.getElementById('map-title');
+  const subtitle = document.getElementById('map-subtitle');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const query = input.value.trim();
+    if (!query) return;
+
+    try {
+      // Calls the function from congress-api.js
+      const matches = await searchMembersByName(query);
+
+      if (!matches || matches.length === 0) {
+        renderNotFound(details, mapContainer, title, subtitle, query);
+        return;
+      }
+
+      // Prefer last-name matches, then fall back
+      const member = pickBestMatch(query, matches);
+
+      renderMemberDetails(details, member);
+      renderMap(mapContainer, title, subtitle, member);
+    } catch (err) {
+      console.error(err);
+      renderNotFound(details, mapContainer, title, subtitle, query);
+    }
+  });
+});
+
+/* ---------- Matching helpers (last-name friendly) ---------- */
 
 function normalize(s) {
   return (s ?? '')
     .toLowerCase()
-    .normalize('NFD')                    // split accents
-    .replace(/\p{Diacritic}/gu, '')     // remove accents
-    .replace(/[^a-z0-9\s.-]/g, ' ')     // drop punctuation
-    .replace(/\s+/g, ' ')               // collapse spaces
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s.-]/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -15,85 +52,29 @@ function lastNameOf(fullName) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
-// Choose the best match from API results given a free-text query.
-// Prefers exact last-name match, then starts-with on last name, then full-name starts-with/includes.
 function pickBestMatch(query, matches) {
   const q = normalize(query);
   const qLast = lastNameOf(query);
-  let best = null;
-  let bestScore = -1;
+  let best = null, bestScore = -1;
 
   for (const m of matches) {
     const name = normalize(m.name);
     const mLast = lastNameOf(m.name);
-
     let score = 0;
 
-    // Strong preference: exact last-name match
     if (qLast && mLast === qLast) score = Math.max(score, 100);
-
-    // Next best: last name starts-with
     if (qLast && mLast.startsWith(qLast)) score = Math.max(score, 90);
 
-    // Full-name heuristics
     if (name === q) score = Math.max(score, 95);
     else if (name.startsWith(q)) score = Math.max(score, 85);
     else if (name.includes(q)) score = Math.max(score, 70);
 
     if (score > bestScore) { bestScore = score; best = m; }
   }
-
-  // Require at least a reasonable score; else just return first result as fallback
   return bestScore >= 70 ? best : (matches[0] ?? null);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('search-form');
-  const input = document.getElementById('member-name');
-  const details = document.getElementById('member-details');
-  const mapContainer = document.getElementById('map-container');
-  const datalist = document.getElementById('member-options');
-  const title = document.getElementById('map-title');
-  const subtitle = document.getElementById('map-subtitle');
-
-
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const query = input.value.trim();
-  if (!query) return;
-
-  try {
-    // Call the Congress.gov API (from congress-api.js)
-    const matches = await searchMembersByName(query);
-
-    if (!matches || matches.length === 0) {
-      renderNotFound(details, mapContainer, title, subtitle, query);
-      return;
-    }
-
-// Prefer exact/close last-name matches so "jeffries" finds Hakeem Jeffries
-const member = pickBestMatch(query, matches);
-
-
-    renderMemberDetails(details, member);
-    renderMap(mapContainer, title, subtitle, member);
-  } catch (err) {
-    console.error(err);
-    renderNotFound(details, mapContainer, title, subtitle, query);
-  }
-});
-
-
-
-
-function findMember(query) {
-  const normalized = query.toLowerCase();
-  if (MEMBER_INDEX.has(normalized)) {
-    return MEMBER_INDEX.get(normalized);
-  }
-
-  return MEMBERS.find((member) => member.name.toLowerCase().includes(normalized));
-}
+/* ---------- UI renderers ---------- */
 
 function renderNotFound(details, mapContainer, title, subtitle, query) {
   details.classList.remove('hidden');
@@ -109,7 +90,8 @@ function renderNotFound(details, mapContainer, title, subtitle, query) {
 
 function renderMemberDetails(container, member) {
   container.classList.remove('hidden');
-  const tel = member.phone.replace(/[^0-9]/g, '');
+  const tel = (member.phone || '').replace(/[^0-9]/g, '');
+
   container.innerHTML = `
     <header>
       <h2>${escapeHtml(member.name)}</h2>
@@ -118,19 +100,19 @@ function renderMemberDetails(container, member) {
     <dl>
       <div>
         <dt>State</dt>
-        <dd>${escapeHtml(member.state)}</dd>
+        <dd>${escapeHtml(member.state ?? '')}</dd>
       </div>
       <div>
         <dt>Office</dt>
-        <dd>${escapeHtml(member.office)} ${escapeHtml(member.building)}</dd>
+        <dd>${escapeHtml(member.office ?? '')} ${escapeHtml(member.building ?? '')}</dd>
       </div>
       <div>
         <dt>Floor</dt>
-        <dd>${escapeHtml(member.floor.toString())}</dd>
+        <dd>${escapeHtml((member.floor ?? '').toString())}</dd>
       </div>
       <div>
         <dt>Phone</dt>
-        <dd><a href="tel:${escapeHtml(tel)}">${escapeHtml(member.phone)}</a></dd>
+        <dd>${tel ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(member.phone)}</a>` : ''}</dd>
       </div>
       <div>
         <dt>Address</dt>
@@ -143,7 +125,7 @@ function renderMemberDetails(container, member) {
 function renderMap(mapContainer, title, subtitle, member) {
   const building = BUILDING_PLANS[member.building];
   if (!building) {
-    title.textContent = `${member.office} ${member.building}`;
+    title.textContent = `${member.office ?? ''} ${member.building ?? ''}`.trim();
     subtitle.textContent = 'We do not have a floor plan for this building yet.';
     mapContainer.innerHTML = '<p class="placeholder">Map unavailable.</p>';
     return;
@@ -151,16 +133,18 @@ function renderMap(mapContainer, title, subtitle, member) {
 
   const floorPlan = building.floors[member.floor];
   if (!floorPlan) {
-    title.textContent = `${member.office} · ${member.building}`;
+    title.textContent = `${member.office ?? ''} · ${member.building}`;
     subtitle.textContent = `Floor ${member.floor} map not available yet.`;
     mapContainer.innerHTML = '<p class="placeholder">Map unavailable for this floor.</p>';
     return;
   }
 
-  title.textContent = `${member.office} · ${member.building}`;
+  title.textContent = `${member.office ?? ''} · ${member.building}`;
   subtitle.textContent = `Floor ${member.floor} | ${building.address}`;
 
   const svg = createSvgCanvas(floorPlan.width, floorPlan.height);
+
+  // Draw schematic shapes
   floorPlan.shapes.forEach((shape) => {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', shape.d);
@@ -179,6 +163,7 @@ function renderMap(mapContainer, title, subtitle, member) {
     }
   });
 
+  // If we don’t have coordinates yet, don’t attempt to place a marker
   if (!member.coordinates) {
     mapContainer.innerHTML = '<p class="placeholder">No coordinate data available for this office.</p>';
     return;
@@ -204,6 +189,8 @@ function renderMap(mapContainer, title, subtitle, member) {
   mapContainer.innerHTML = '';
   mapContainer.append(wrapper);
 }
+
+/* ---------- SVG helpers ---------- */
 
 function createSvgCanvas(width, height) {
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -245,9 +232,10 @@ function createStarPoints(cx, cy, outerRadius, innerRadius) {
     points.push(`${x},${y}`);
     rotation += step;
   }
-
   return points.join(' ');
 }
+
+/* ---------- Utilities ---------- */
 
 function escapeHtml(value) {
   const safeValue = value ?? '';
@@ -257,6 +245,7 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-
 }
+
+
 
