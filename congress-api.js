@@ -1,7 +1,12 @@
-// --- CONFIG: put your Congress.gov API key here ---
-const CONGRESS_API_KEY = 'ovI9LVxi0921Ksug2I66DgfHtN6mkgUXXBBDBZ6j';
-// Base URL for the v3 API (JSON). If Congress.gov updates this, we can change it here.
-const CONGRESS_API_BASE = 'https://api.congress.gov/v3';
+- const CONGRESS_API_BASE = 'https://api.congress.gov/v3';
++ const CONGRESS_API_BASE = 'https://YOUR-WORKER-SUBDOMAIN.workers.dev';
+
+ // ...
+
+
+- });
++ const resp = await fetch(url); // key is added in the Worker
+
 
 // Utility: pick building & office number out of an address string
 function parseOfficeFromAddress(address) {
