@@ -1,6 +1,23 @@
 // app.js — clean working version wired to Congress.gov search
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+// Google Map handles
+let GMAP = null;
+let GMARKER = null;
+
+function initGMap() {
+  // called by Google Maps loader
+  const el = document.getElementById('gmap');
+  if (!el) return;
+  GMAP = new google.maps.Map(el, {
+    center: { lat: 38.8899, lng: -77.0091 }, // Capitol area fallback
+    zoom: 17,
+    mapTypeId: 'roadmap',
+    clickableIcons: false,
+    gestureHandling: 'greedy',
+  });
+}
+window.initGMap = initGMap;
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('search-form');
@@ -285,6 +302,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
