@@ -108,6 +108,10 @@ function renderNotFound(details, mapContainer, title, subtitle, query) {
 function renderMemberDetails(container, member) {
   container.classList.remove('hidden');
   const tel = (member.phone || '').replace(/[^0-9]/g, '');
+  const buildingInfo = BUILDING_COORDS[member.building] || null;
+  const addressText = member.address && member.address.trim()
+    ? member.address
+    : (buildingInfo && buildingInfo.address) || 'Washington, DC';
 
   container.innerHTML = `
     <header>
@@ -133,7 +137,7 @@ function renderMemberDetails(container, member) {
       </div>
       <div>
         <dt>Address</dt>
-        <dd>${escapeHtml((BUILDING_COORDS[member.building] && BUILDING_COORDS[member.building].address) || 'Washington, DC')}</dd>
+        <dd>${escapeHtml(addressText)}</dd>
       </div>
     </dl>
   `;
@@ -141,9 +145,10 @@ function renderMemberDetails(container, member) {
 
 function renderMap(mapContainer, title, subtitle, member) {
   const info = BUILDING_COORDS[member.building];
+  const fallbackAddress = member.address || 'Building not recognized.';
 
   title.textContent = member.building || 'Washington, DC';
-  subtitle.textContent = info ? info.address : 'Building not recognized.';
+  subtitle.textContent = info ? info.address : fallbackAddress;
 
   // Ensure a map DIV exists
   if (!document.getElementById('gmap')) {
@@ -233,6 +238,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
