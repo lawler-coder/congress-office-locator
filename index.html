@@ -55,9 +55,25 @@
     <p>
       Data sources include House and Senate office directories. Floor plans are schematic and not to scale.
     </p>
-  </footer>
+ </footer>
 
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2_YNFukcQi0f5RA2V1UklFUWVGvOAJKE&callback=initGMap"></script>
+<script>
+  window.__googleMapsReady = false;
+  window.__googleMapsInitQueue = [];
+  window.initGMap = function initGMap() {
+    window.__googleMapsReady = true;
+    var queue = window.__googleMapsInitQueue || [];
+    window.__googleMapsInitQueue = [];
+    for (var i = 0; i < queue.length; i++) {
+      try {
+        queue[i]();
+      } catch (err) {
+        console.error('Google Maps init callback failed', err);
+      }
+    }
+  };
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD2_YNFukcQi0f5RA2V1UklFUWVGvOAJKE&callback=initGMap&loading=async"></script>
 <script src="data.js?v=1"></script>
 <script src="congress-api.js?v=2"></script>
 <script src="app.js?v=3"></script>
@@ -67,6 +83,7 @@
 </body>
 
 </html>
+
 
 
 
