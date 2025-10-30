@@ -143,64 +143,136 @@ function pickBestMatch(query, matches) {
 
 function renderNotFound(details, mapContainer, title, subtitle, query) {
   details.classList.remove('hidden');
-  details.innerHTML = `
-    <h2>No results</h2>
-    <p>We couldn't find a match for "${escapeHtml(query)}". Try the full name of the member.</p>
-  `;
+  while (details.firstChild) {
+    details.removeChild(details.firstChild);
+  }
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'No results';
+
+  const message = document.createElement('p');
+  const queryText = query == null ? '' : String(query);
+  message.textContent = `We couldn't find a match for "${queryText}". Try the full name of the member.`;
+
+  details.appendChild(heading);
+  details.appendChild(message);
 
   title.textContent = 'Member not found';
   subtitle.textContent = 'Double-check the spelling or try another name.';
-  mapContainer.innerHTML = '<p class="placeholder">No map to display.</p>';
+  if (mapContainer) {
+    while (mapContainer.firstChild) {
+      mapContainer.removeChild(mapContainer.firstChild);
+    }
+    const placeholder = document.createElement('p');
+    placeholder.className = 'placeholder';
+    placeholder.textContent = 'No map to display.';
+    mapContainer.appendChild(placeholder);
+  }
 }
 
 function renderMemberDetails(container, member, location) {
   container.classList.remove('hidden');
-  const tel = (member.phone || '').replace(/[^0-9]/g, '');
+
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+  }
+
+  const telRaw = member && member.phone ? String(member.phone) : '';
+  const tel = telRaw.replace(/[^0-9]/g, '');
   const buildingInfo = BUILDING_COORDS[member.building] || null;
   const section = location && location.section ? location.section : null;
-  const addressText = member.address && member.address.trim()
+  const addressText = member.address && String(member.address).trim()
     ? member.address
     : (buildingInfo && buildingInfo.address) || 'Washington, DC';
 
-  container.innerHTML = `
-    <header>
-      <h2>${escapeHtml(member.name)}</h2>
-      <div class="badge">${escapeHtml(member.chamber)} · ${escapeHtml(member.party)}</div>
+  const header = document.createElement('header');
+  const heading = document.createElement('h2');
+  heading.textContent = member && member.name ? member.name : '';
+  const badge = document.createElement('div');
+  badge.className = 'badge';
+  const badgeParts = [];
+  if (member && member.chamber) badgeParts.push(member.chamber);
+  if (member && member.party) badgeParts.push(member.party);
+  badge.textContent = badgeParts.join(' · ');
+  header.appendChild(heading);
+  header.appendChild(badge);
 
-  container.innerHTML = `
-    <header>
-      <h2>${escapeHtml(member.name)}</h2>
-      <div class="badge">${escapeHtml(member.chamber)} · ${escapeHtml(member.party)}</div>
-    </header>
-    <dl>
-      <div>
-        <dt>State</dt>
-        <dd>${escapeHtml(member.state ?? '')}</dd>
-      </div>
-    <div>
-        <dt>Office</dt>
-        <dd>${escapeHtml(member.office ?? '')} ${escapeHtml(member.building ?? '')}</dd>
-      </div>
-      <div>
-        <dt>Floor</dt>
-        <dd>${escapeHtml((member.floor ?? '').toString())}</dd>
-      </div>
-      ${section && section.label ? `
-      <div>
-        <dt>Wing / Hall</dt>
-        <dd>${escapeHtml(section.label)}</dd>
-      </div>` : ''}
-      <div>
-        <dt>Phone</dt>
-        <dd>${tel ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(member.phone)}</a>` : ''}</dd>
-      </div>
-      <div>
-        <dt>Address</dt>
-        <dd>${escapeHtml(addressText)}</dd>
-      </div>
-    </dl>
-    ${section && section.description ? `<p class="wing-note">${escapeHtml(section.description)}</p>` : ''}
-  `;
+  const dl = document.createElement('dl');
+
+  function appendContent(dd, value) {
+    if (!dd) return;
+    if (value == null) {
+      dd.textContent = '';
+      return;
+    }
+    if (typeof value === 'string') {
+      if (dd.childNodes.length) {
+        dd.appendChild(document.createTextNode(value));
+      } else {
+        dd.textContent = value;
+      }
+      return;
+    }
+    if (value && typeof value.nodeType === 'number') {
+      dd.appendChild(value);
+      return;
+    }
+    dd.textContent = String(value);
+  }
+
+  function appendRow(label, content) {
+    const row = document.createElement('div');
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+
+    if (Array.isArray(content)) {
+      for (let i = 0; i < content.length; i++) {
+        appendContent(dd, content[i]);
+      }
+    } else {
+      appendContent(dd, content);
+    }
+
+    row.appendChild(dt);
+    row.appendChild(dd);
+    dl.appendChild(row);
+  }
+
+  appendRow('State', member && member.state ? member.state : '');
+
+  const officeParts = [];
+  if (member && member.office) officeParts.push(member.office);
+  if (member && member.building) officeParts.push(member.building);
+  appendRow('Office', officeParts.join(' ').trim());
+
+  const floorValue = member && member.floor != null ? String(member.floor) : '';
+  appendRow('Floor', floorValue);
+
+  if (section && section.label) {
+    appendRow('Wing / Hall', section.label);
+  }
+
+  if (tel) {
+    const link = document.createElement('a');
+    link.href = 'tel:' + tel;
+    link.textContent = telRaw || tel;
+    appendRow('Phone', link);
+  } else {
+    appendRow('Phone', '');
+  }
+
+  appendRow('Address', addressText || '');
+
+  container.appendChild(header);
+  container.appendChild(dl);
+
+  if (section && section.description) {
+    const note = document.createElement('p');
+    note.className = 'wing-note';
+    note.textContent = section.description;
+    container.appendChild(note);
+  }
 }
 
 function renderMap(mapContainer, title, subtitle, member, location) {
@@ -215,38 +287,41 @@ function renderMap(mapContainer, title, subtitle, member, location) {
   } else {
     subtitle.textContent = info ? info.address : fallbackAddress;
   }
+
   // Ensure a map DIV exists
   if (!document.getElementById('gmap')) {
     mapContainer.innerHTML = '<div id="gmap" style="width:100%;height:420px;"></div>';
-    if (typeof google !== 'undefined' && !GMAP) initGMap();
   }
 
-  // If Maps isn’t ready yet, try again shortly
- if (typeof google === 'undefined' || !GMAP) {␊
-    setTimeout(() => renderMap(mapContainer, title, subtitle, member, location), 150);
-    return;
-  }
+  onGoogleMapsReady(() => {
+    const map = createGoogleMapIfNeeded();
+    if (!map) return;
 
-  if (!info || info.lat == null || info.lng == null) {␊
-    GMAP.setCenter({ lat: 38.8899, lng: -77.0091 }); // fallback near the Capitol␊
-    GMAP.setZoom(15);␊
-    return;␊
-  }␊
-␊
-  const pos = (location && location.position) || { lat: info.lat, lng: info.lng };
-  GMAP.setCenter(pos);␊
-  GMAP.setZoom((location && location.zoom) || 19);
+    if (!info || info.lat == null || info.lng == null) {
+      map.setCenter({ lat: 38.8899, lng: -77.0091 });
+      map.setZoom(15);
+      if (GMARKER) {
+        GMARKER.setMap(null);
+        GMARKER = null;
+      }
+      return;
+    }
 
-  if (!GMARKER) {
-    GMARKER = new google.maps.Marker({
-      map: GMAP,
-      position: pos,
-      label: { text: '★', color: '#0b3d91', fontSize: '30px' }
-    });
-  } else {
-    GMARKER.setPosition(pos);
-  }
-  }
+    const pos = (location && location.position) || { lat: info.lat, lng: info.lng };
+    map.setCenter(pos);
+    map.setZoom((location && location.zoom) || 19);
+
+    if (!GMARKER) {
+      GMARKER = new google.maps.Marker({
+        map: map,
+        position: pos,
+        label: { text: '★', color: '#0b3d91', fontSize: '30px' }
+      });
+    } else {
+      GMARKER.setPosition(pos);
+    }
+  });
+}
 
 function resolveOfficeLocation(member) {
   const buildingInfo = BUILDING_COORDS[member.building] || null;
@@ -380,6 +455,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
