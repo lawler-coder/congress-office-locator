@@ -118,7 +118,7 @@ function lastNameOf(fullName) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
-function pickBestMatch(query, matches) {␊
+function pickBestMatch(query, matches) {
   const q = normalize(query);
   const qLast = lastNameOf(query);
   let best = null, bestScore = -1;
@@ -456,6 +456,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
