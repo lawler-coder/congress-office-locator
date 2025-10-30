@@ -44,8 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Prefer last-name matches, then fall back
       const member = pickBestMatch(query, matches);
 
-      renderMemberDetails(details, member);
-      renderMap(mapContainer, title, subtitle, member);
+      const location = resolveOfficeLocation(member);
+      renderMemberDetails(details, member, location);
+      renderMap(mapContainer, title, subtitle, member, location);
     } catch (err) {
       console.error(err);
       renderNotFound(details, mapContainer, title, subtitle, query);
@@ -105,13 +106,19 @@ function renderNotFound(details, mapContainer, title, subtitle, query) {
   mapContainer.innerHTML = '<p class="placeholder">No map to display.</p>';
 }
 
-function renderMemberDetails(container, member) {
+function renderMemberDetails(container, member, location) {
   container.classList.remove('hidden');
   const tel = (member.phone || '').replace(/[^0-9]/g, '');
   const buildingInfo = BUILDING_COORDS[member.building] || null;
+  const section = location && location.section ? location.section : null;
   const addressText = member.address && member.address.trim()
     ? member.address
     : (buildingInfo && buildingInfo.address) || 'Washington, DC';
+
+  container.innerHTML = `
+    <header>
+      <h2>${escapeHtml(member.name)}</h2>
+      <div class="badge">${escapeHtml(member.chamber)} · ${escapeHtml(member.party)}</div>
 
   container.innerHTML = `
     <header>
@@ -123,7 +130,7 @@ function renderMemberDetails(container, member) {
         <dt>State</dt>
         <dd>${escapeHtml(member.state ?? '')}</dd>
       </div>
-      <div>
+    <div>
         <dt>Office</dt>
         <dd>${escapeHtml(member.office ?? '')} ${escapeHtml(member.building ?? '')}</dd>
       </div>
@@ -131,6 +138,11 @@ function renderMemberDetails(container, member) {
         <dt>Floor</dt>
         <dd>${escapeHtml((member.floor ?? '').toString())}</dd>
       </div>
+      ${section && section.label ? `
+      <div>
+        <dt>Wing / Hall</dt>
+        <dd>${escapeHtml(section.label)}</dd>
+      </div>` : ''}
       <div>
         <dt>Phone</dt>
         <dd>${tel ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(member.phone)}</a>` : ''}</dd>
@@ -140,16 +152,22 @@ function renderMemberDetails(container, member) {
         <dd>${escapeHtml(addressText)}</dd>
       </div>
     </dl>
+    ${section && section.description ? `<p class="wing-note">${escapeHtml(section.description)}</p>` : ''}
   `;
 }
 
-function renderMap(mapContainer, title, subtitle, member) {
-  const info = BUILDING_COORDS[member.building];
+function renderMap(mapContainer, title, subtitle, member, location) {
+  const info = (location && location.building) || BUILDING_COORDS[member.building];
   const fallbackAddress = member.address || 'Building not recognized.';
 
   title.textContent = member.building || 'Washington, DC';
-  subtitle.textContent = info ? info.address : fallbackAddress;
-
+  if (location && location.section && location.section.label) {
+    const lines = [location.section.label];
+    if (info && info.address) lines.push(info.address);
+    subtitle.textContent = lines.join(' · ');
+  } else {
+    subtitle.textContent = info ? info.address : fallbackAddress;
+  }
   // Ensure a map DIV exists
   if (!document.getElementById('gmap')) {
     mapContainer.innerHTML = '<div id="gmap" style="width:100%;height:420px;"></div>';
@@ -157,20 +175,20 @@ function renderMap(mapContainer, title, subtitle, member) {
   }
 
   // If Maps isn’t ready yet, try again shortly
-  if (typeof google === 'undefined' || !GMAP) {
-    setTimeout(() => renderMap(mapContainer, title, subtitle, member), 150);
+ if (typeof google === 'undefined' || !GMAP) {␊
+    setTimeout(() => renderMap(mapContainer, title, subtitle, member, location), 150);
     return;
   }
 
-  if (!info || info.lat == null || info.lng == null) {
-    GMAP.setCenter({ lat: 38.8899, lng: -77.0091 }); // fallback near the Capitol
-    GMAP.setZoom(15);
-    return;
-  }
-
-  const pos = { lat: info.lat, lng: info.lng };
-  GMAP.setCenter(pos);
-  GMAP.setZoom(19);
+  if (!info || info.lat == null || info.lng == null) {␊
+    GMAP.setCenter({ lat: 38.8899, lng: -77.0091 }); // fallback near the Capitol␊
+    GMAP.setZoom(15);␊
+    return;␊
+  }␊
+␊
+  const pos = (location && location.position) || { lat: info.lat, lng: info.lng };
+  GMAP.setCenter(pos);␊
+  GMAP.setZoom((location && location.zoom) || 19);
 
   if (!GMARKER) {
     GMARKER = new google.maps.Marker({
@@ -181,6 +199,83 @@ function renderMap(mapContainer, title, subtitle, member) {
   } else {
     GMARKER.setPosition(pos);
   }
+  }
+
+function resolveOfficeLocation(member) {
+  const buildingInfo = BUILDING_COORDS[member.building] || null;
+  if (!buildingInfo) {
+    return { building: null, section: null, position: null, zoom: 17 };
+  }
+
+  const section = findBuildingSection(buildingInfo, member.office);
+  const offset = section && section.offset ? section.offset : null;
+  const lat = buildingInfo.lat + (offset && offset.lat ? offset.lat : 0);
+  const lng = buildingInfo.lng + (offset && offset.lng ? offset.lng : 0);
+
+  return {
+    building: buildingInfo,
+    section: section || null,
+    position: { lat, lng },
+    zoom: (section && section.zoom) || buildingInfo.zoom || 19
+  };
+}
+
+function findBuildingSection(buildingInfo, officeValue) {
+  if (!buildingInfo || !buildingInfo.marker || !officeValue) return null;
+
+  const digits = String(officeValue || '').match(/\d+/g);
+  if (!digits || !digits.length) return buildingInfo.marker.fallback || null;
+
+  const numeric = parseInt(digits.join(''), 10);
+  if (!Number.isFinite(numeric)) return buildingInfo.marker.fallback || null;
+
+  const marker = buildingInfo.marker;
+  const index = computeMarkerIndex(marker.field, numeric);
+
+  const sections = marker.sections || [];
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    if (sectionMatches(section, marker, numeric, index)) return section;
+  }
+
+  return marker.fallback || null;
+}
+
+function computeMarkerIndex(field, numeric) {
+  switch (field) {
+    case 'tens':
+      return Math.floor((numeric % 100) / 10);
+    case 'hundreds':
+      return Math.floor((numeric % 1000) / 100);
+    case 'hundredsAbsolute':
+      return Math.floor(numeric / 100);
+    default:
+      return null;
+  }
+}
+
+function sectionMatches(section, marker, numeric, index) {
+  if (!section) return false;
+
+  if (section.match != null) {
+    const values = Array.isArray(section.match) ? section.match : [section.match];
+    if (values.some((value) => value === index)) return true;
+  }
+
+  const ranges = section.ranges || [];
+  if (ranges.length) {
+    const modulo = section.modulo != null ? section.modulo : marker.modulo;
+    const base = modulo ? (numeric % modulo) : numeric;
+    for (let i = 0; i < ranges.length; i++) {
+      const range = ranges[i];
+      if (!range || range.length < 2) continue;
+      const min = range[0];
+      const max = range[1];
+      if (base >= min && base <= max) return true;
+    }
+  }
+
+  return false;
 }
 /* ---------- SVG helpers ---------- */
 
@@ -238,6 +333,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
