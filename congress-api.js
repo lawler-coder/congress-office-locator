@@ -30,22 +30,42 @@
   }
 
   // Pull building / office # / floor from a DC address string
-  function parseOfficeFromAddress(address) {
-    if (!address) return { building: 'Washington, DC', office: '', floor: '' };
+function parseOfficeFromAddress(address) {
+  if (!address) return { building: 'Washington, DC', office: '', floor: '' };
 
-    var bldgs = [
-      'Cannon House Office Building',
-      'Longworth House Office Building',
-      'Rayburn House Office Building',
-      'Hart Senate Office Building',
-      'Dirksen Senate Office Building',
-      'Russell Senate Office Building'
-    ];
+  var txt = String(address || '').toLowerCase();
+  txt = txt.replace(/\./g, '').replace(/\s+/g, ' ').trim();
 
-    var building = 'Washington, DC';
-    for (var i = 0; i < bldgs.length; i++) {
-      if (address.indexOf(bldgs[i]) !== -1) { building = bldgs[i]; break; }
+  // Office/room number
+  var office = '';
+  var m = txt.match(/\b([0-9]{2,5})\b\s+(?:[a-z\- ]+)?(?:house|senate)\s+office\s+building/);
+  if (m) office = m[1];
+
+  // Building synonyms
+  var map = [
+    { key: 'Rayburn House Office Building',  pats: ['rayburn','rhob'] },
+    { key: 'Longworth House Office Building',pats: ['longworth','lhob'] },
+    { key: 'Cannon House Office Building',   pats: ['cannon','chob'] },
+    { key: 'Hart Senate Office Building',    pats: ['hart','hsob'] },
+    { key: 'Dirksen Senate Office Building', pats: ['dirksen','dsob'] },
+    { key: 'Russell Senate Office Building', pats: ['russell','rsob'] }
+  ];
+
+  var building = 'Washington, DC';
+  outer: for (var i = 0; i < map.length; i++) {
+    for (var j = 0; j < map[i].pats.length; j++) {
+      if (txt.indexOf(map[i].pats[j]) !== -1) { building = map[i].key; break outer; }
     }
+  }
+
+  var floor = '';
+  if (/^[0-9]{3,4}$/.test(office)) {
+    var f = parseInt(office.charAt(0), 10);
+    if (f >= 1 && f <= 7) floor = String(f);
+  }
+  return { building: building, office: office, floor: floor };
+}
+
 
     // Try to capture a room number before “… House/Senate Office Building”
     var office = '';
@@ -109,27 +129,30 @@
   }
 
   // Extract list from many possible response shapes
-  function extractItems(json) {
-    if (!json) return [];
-    if (Array.isArray(json)) return json;
+function extractItems(json) {
+  if (!json) return [];
+  if (Array.isArray(json)) return json;
 
-    // Common containers
-    if (Array.isArray(json.members)) return json.members;
-    if (Array.isArray(json.member)) return json.member;
-    if (Array.isArray(json.results)) return json.results;
-    if (json.data && Array.isArray(json.data)) return json.data;
+  // Common containers
+  if (Array.isArray(json.members)) return json.members;
+  if (Array.isArray(json.member)) return json.member;
+  if (Array.isArray(json.results)) return json.results;
+  if (json.data && Array.isArray(json.data)) return json.data;
 
-    // Some feeds nest one level down
-    if (json.results && json.results[0] && Array.isArray(json.results[0].members)) {
-      return json.results[0].members;
-    }
-
-    // Last resort: find first array in object
-    for (var k in json) {
-      if (Array.isArray(json[k])) return json[k];
-    }
-    return [];
+  // Sometimes: results[0].members
+  if (json.results && json.results[0] && Array.isArray(json.results[0].members)) {
+    return json.results[0].members;
   }
+
+  // Generic fallback: first array that looks like member objects
+  for (var k in json) {
+    if (Array.isArray(json[k]) && json[k].length && typeof json[k][0] === 'object') {
+      return json[k];
+    }
+  }
+  return [];
+}
+
 
   // Main search used by app.js
   function searchMembersByName(query) {
