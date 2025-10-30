@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ---------- Matching helpers (last-name friendly) ---------- */
 
 function normalize(s) {
-  return (s ?? '')
+  const value = s == null ? '' : s;
+  return value
     .toLowerCase()
     .normalize('NFD').replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-z0-9\s.-]/g, ' ')
@@ -117,7 +118,7 @@ function lastNameOf(fullName) {
   return parts.length ? parts[parts.length - 1] : '';
 }
 
-function pickBestMatch(query, matches) {
+function pickBestMatch(query, matches) {␊
   const q = normalize(query);
   const qLast = lastNameOf(query);
   let best = null, bestScore = -1;
@@ -136,7 +137,7 @@ function pickBestMatch(query, matches) {
 
     if (score > bestScore) { bestScore = score; best = m; }
   }
-  return bestScore >= 70 ? best : (matches[0] ?? null);
+ return bestScore >= 70 ? best : (matches.length ? matches[0] : null);
 }
 
 /* ---------- UI renderers ---------- */
@@ -455,6 +456,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
