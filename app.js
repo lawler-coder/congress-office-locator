@@ -5,27 +5,74 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 let GMAP = null;
 let GMARKER = null;
 
-function initGMap() {
-  // called by Google Maps loader
+if (typeof window !== 'undefined' && typeof window.initGMap !== 'function') {
+  window.__googleMapsReady = false;
+  window.__googleMapsInitQueue = window.__googleMapsInitQueue || [];
+  window.initGMap = function initGMapFallback() {
+    window.__googleMapsReady = true;
+    const queue = window.__googleMapsInitQueue || [];
+    window.__googleMapsInitQueue = [];
+    for (let i = 0; i < queue.length; i++) {
+      try {
+        queue[i]();
+      } catch (err) {
+        console.error('Google Maps init callback failed', err);
+      }
+    }
+  };
+}
+
+function onGoogleMapsReady(callback) {
+  if (typeof callback !== 'function') return;
+
+  const mapsReady = typeof window !== 'undefined' && window.__googleMapsReady;
+  if (mapsReady && typeof google !== 'undefined' && google.maps) {
+    callback();
+    return;
+  }
+
+  const queue = (typeof window !== 'undefined' && window.__googleMapsInitQueue)
+    ? window.__googleMapsInitQueue
+    : [];
+
+  if (queue.push) {
+    queue.push(callback);
+  }
+
+  if (typeof window !== 'undefined' && !window.__googleMapsInitQueue) {
+    window.__googleMapsInitQueue = queue;
+  }
+}
+
+function createGoogleMapIfNeeded() {
+  if (GMAP) return GMAP;
+  if (typeof google === 'undefined' || !google.maps) return null;
+
   const el = document.getElementById('gmap');
-  if (!el) return;
+  if (!el) return null;
+
   GMAP = new google.maps.Map(el, {
-    center: { lat: 38.8899, lng: -77.0091 }, // Capitol area fallback
+    center: { lat: 38.8899, lng: -77.0091 },
     zoom: 17,
     mapTypeId: 'roadmap',
     clickableIcons: false,
     gestureHandling: 'greedy',
   });
+
+  return GMAP;
 }
-window.initGMap = initGMap;
 
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('search-form');
   const input = document.getElementById('member-name');
-  const details = document.getElementById('member-details');
+    const details = document.getElementById('member-details');
   const mapContainer = document.getElementById('map-container');
   const title = document.getElementById('map-title');
   const subtitle = document.getElementById('map-subtitle');
+
+  onGoogleMapsReady(() => {
+    createGoogleMapIfNeeded();
+  });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -333,6 +380,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
