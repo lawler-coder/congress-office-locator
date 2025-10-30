@@ -133,46 +133,51 @@ function renderMemberDetails(container, member) {
       </div>
       <div>
         <dt>Address</dt>
-        <dd>${escapeHtml(BUILDING_PLANS[member.building]?.address ?? 'Washington, DC')}</dd>
+        <dd>${escapeHtml((BUILDING_COORDS[member.building] && BUILDING_COORDS[member.building].address) || 'Washington, DC')}</dd>
       </div>
     </dl>
   `;
 }
 
 function renderMap(mapContainer, title, subtitle, member) {
-  const plan = BUILDING_PLANS[member.building];
+  const info = BUILDING_COORDS[member.building];
 
   title.textContent = member.building || 'Washington, DC';
-  subtitle.textContent = plan ? plan.address : 'We do not have a schematic for this building yet.';
+  subtitle.textContent = info ? info.address : 'Building not recognized.';
 
-  if (!plan) {
-    mapContainer.innerHTML = '<p class="placeholder">Map unavailable.</p>';
+  // Ensure a map DIV exists
+  if (!document.getElementById('gmap')) {
+    mapContainer.innerHTML = '<div id="gmap" style="width:100%;height:420px;"></div>';
+    if (typeof google !== 'undefined' && !GMAP) initGMap();
+  }
+
+  // If Maps isn’t ready yet, try again shortly
+  if (typeof google === 'undefined' || !GMAP) {
+    setTimeout(() => renderMap(mapContainer, title, subtitle, member), 150);
     return;
   }
 
-  const svg = createSvgCanvas(plan.width, plan.height);
+  if (!info || info.lat == null || info.lng == null) {
+    GMAP.setCenter({ lat: 38.8899, lng: -77.0091 }); // fallback near the Capitol
+    GMAP.setZoom(15);
+    return;
+  }
 
-  // Building rectangle
-  const r = document.createElementNS(SVG_NS, 'rect');
-  r.setAttribute('x', plan.rect.x);
-  r.setAttribute('y', plan.rect.y);
-  r.setAttribute('width', plan.rect.w);
-  r.setAttribute('height', plan.rect.h);
-  r.setAttribute('rx', 10);
-  r.setAttribute('ry', 10);
-  r.setAttribute('fill', '#eef3ff');
-  r.setAttribute('stroke', '#c7d6f5');
-  r.setAttribute('stroke-width', 2);
-  svg.append(r);
+  const pos = { lat: info.lat, lng: info.lng };
+  GMAP.setCenter(pos);
+  GMAP.setZoom(19);
 
-  // Label
-  const label = document.createElementNS(SVG_NS, 'text');
-  label.textContent = plan.rect.label;
-  label.setAttribute('x', plan.rect.x + plan.rect.w / 2);
-  label.setAttribute('y', plan.rect.y + plan.rect.h + 24);
-  label.setAttribute('text-anchor', 'middle');
-  label.setAttribute('class', 'map-label');
-  svg.append(label);
+  if (!GMARKER) {
+    GMARKER = new google.maps.Marker({
+      map: GMAP,
+      position: pos,
+      label: { text: '★', color: '#0b3d91', fontSize: '30px' }
+    });
+  } else {
+    GMARKER.setPosition(pos);
+  }
+}
+
 
   // Star marker at building center (we can refine to wing later)
   const marker = createMarker(plan.marker.x, plan.marker.y);
@@ -182,69 +187,6 @@ function renderMap(mapContainer, title, subtitle, member) {
   wrapper.className = 'map-canvas';
   wrapper.append(svg);
 
-  mapContainer.innerHTML = '';
-  mapContainer.append(wrapper);
-}
-
-
-  const floorPlan = building.floors[member.floor];
-  if (!floorPlan) {
-    title.textContent = `${member.office ?? ''} · ${member.building}`;
-    subtitle.textContent = `Floor ${member.floor} map not available yet.`;
-    mapContainer.innerHTML = '<p class="placeholder">Map unavailable for this floor.</p>';
-    return;
-  }
-
-  title.textContent = `${member.office ?? ''} · ${member.building}`;
-  subtitle.textContent = `Floor ${member.floor} | ${building.address}`;
-
-  const svg = createSvgCanvas(floorPlan.width, floorPlan.height);
-
-  // Draw schematic shapes
-  floorPlan.shapes.forEach((shape) => {
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('d', shape.d);
-    path.setAttribute('fill', shape.fill);
-    path.setAttribute('stroke', '#c7d6f5');
-    path.setAttribute('stroke-width', 2);
-    svg.append(path);
-
-    if (shape.label) {
-      const text = document.createElementNS(SVG_NS, 'text');
-      text.textContent = shape.label;
-      text.setAttribute('x', shape.labelX);
-      text.setAttribute('y', shape.labelY);
-      text.setAttribute('class', 'map-label');
-      svg.append(text);
-    }
-  });
-
-  // If we don’t have coordinates yet, don’t attempt to place a marker
-  if (!member.coordinates) {
-    mapContainer.innerHTML = '<p class="placeholder">No coordinate data available for this office.</p>';
-    return;
-  }
-
-  const marker = createMarker(member.coordinates.x, member.coordinates.y);
-  svg.append(marker);
-
-  const label = document.createElementNS(SVG_NS, 'text');
-  label.textContent = `${member.office}`;
-  label.setAttribute('x', member.coordinates.x);
-  label.setAttribute('y', member.coordinates.y - 24);
-  label.setAttribute('text-anchor', 'middle');
-  label.setAttribute('class', 'map-label');
-  label.setAttribute('fill', '#0b3d91');
-  label.setAttribute('font-weight', '700');
-  svg.append(label);
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'map-canvas';
-  wrapper.append(svg);
-
-  mapContainer.innerHTML = '';
-  mapContainer.append(wrapper);
-}
 
 /* ---------- SVG helpers ---------- */
 
@@ -302,6 +244,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
