@@ -177,17 +177,6 @@ function renderMap(mapContainer, title, subtitle, member) {
     GMARKER.setPosition(pos);
   }
 }
-
-
-  // Star marker at building center (we can refine to wing later)
-  const marker = createMarker(plan.marker.x, plan.marker.y);
-  svg.append(marker);
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'map-canvas';
-  wrapper.append(svg);
-
-
 /* ---------- SVG helpers ---------- */
 
 function createSvgCanvas(width, height) {
@@ -244,6 +233,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
