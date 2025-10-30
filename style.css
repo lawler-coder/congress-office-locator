@@ -133,6 +133,16 @@ body {
   font-size: 1.05rem;
 }
 
+.card-details .wing-note {
+  margin-top: 1.25rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
 .map-card {
   padding: 0;
   overflow: hidden;
@@ -254,4 +264,5 @@ body {
   .map-header {
     padding: 1.25rem 1.25rem 0;
   }
+
 }
