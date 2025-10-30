@@ -106,8 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function normalize(s) {
   const value = s == null ? '' : s;
   return value
-    .toLowerCase()
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+   .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s.-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -456,6 +456,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
 
 
 
