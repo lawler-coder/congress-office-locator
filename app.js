@@ -233,8 +233,7 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-// at the top of your submit handler in app.js:
-console.log('Submitting search for:', query);
+
 
 
 
